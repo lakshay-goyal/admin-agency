@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
-export function SignOutButton() {
+export function SignOutButton({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +29,21 @@ export function SignOutButton() {
     } finally {
       setPending(false);
     }
+  }
+
+  if (compact) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={signOut}
+        disabled={pending}
+        aria-label="Sign out"
+        title="Sign out"
+      >
+        {pending ? <Spinner /> : <LogOutIcon aria-hidden="true" />}
+      </Button>
+    );
   }
 
   return (

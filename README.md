@@ -5,8 +5,47 @@ Next.js App Router, Better Auth, and Convex. The login page uses the project's s
 - `/` redirects to `/login` or `/dashboard` according to the current session.
 - `/login` accepts an email or username and password, plus Google sign-in once configured.
 - `/dashboard` requires a live session, an approved admin email, and a stored `admin` role. Authenticated administrators skip the login page.
+- The dashboard is a client operations workspace: a searchable client sidebar, overview and data-completeness checks, the full onboarding brief, delivery stages and progress, agreement and billing, uploaded files, and the client-visible activity timeline.
 - Public password sign-up is disabled. Admin accounts and their roles are created through an internal Convex mutation. Google login can link to a provisioned administrator account.
 - Removing an address from `ADMIN_EMAILS` revokes dashboard access, including for existing sessions.
+
+## Admin dashboard
+
+The dashboard reads and writes the client workspace tables that the public app already uses:
+
+| Table | What the admin sees and edits |
+| --- | --- |
+| `onboarding` | Every saved onboarding answer, its state, priority, and admin note. The brief is grouped into phases and can be filtered by missing answers or follow-ups. |
+| `engagements` | Plan, fees, currency, scope, exclusions, third-party costs, billing details, agreement/advance references, verified emails, and dependencies. |
+| `projects` | Client-facing project name, summary, status, current stage, overall progress, next step, and dates. |
+| `projectStages` | Each delivery stage's status, progress, dates, note, and client visibility. Saving a stage recalculates overall progress and the current stage. |
+| `documents` | File metadata, category, review status, and the note shown to the client. File bytes stay in Convex storage. |
+| `projectActivity` | The client-visible timeline. Admins can publish new updates directly from the Activity tab. |
+
+Client account details (name, email, verification) come from Better Auth and are read-only in this dashboard. Project record edits, stage progress, agreement changes, answer corrections, file reviews, and activity updates are persisted immediately and appear in the client workspace through Convex subscriptions.
+
+### Connect the client data
+
+The admin app must use the **same Convex deployment** as the client app. `convex/schema.ts` mirrors the client app's tables so this dashboard can query them. If you connect the admin app to the existing `webAgency` project, keep the two schema files aligned whenever the client data model changes. In particular, the client app's schema must also declare the `adminAccounts` table (or both apps must deploy from one shared `convex/` directory); otherwise a client-app deploy can remove the admin role table.
+
+The dashboard shows a helpful empty state when it cannot see client records. That usually means the admin app is pointed at a separate local deployment.
+
+### Local preview data
+
+For a quick visual preview on a development deployment only:
+
+```sh
+bunx convex env set ALLOW_DEMO_DATA true
+bunx convex run demo:seed
+```
+
+Remove the variable when you are done:
+
+```sh
+bunx convex env remove ALLOW_DEMO_DATA
+```
+
+The seed contains four example clients at different stages. Never enable `ALLOW_DEMO_DATA` on production.
 
 ## Connect your Convex database
 

@@ -11,6 +11,9 @@
 import type * as admin from "../admin.js";
 import type * as adminAccounts from "../adminAccounts.js";
 import type * as auth from "../auth.js";
+import type * as clientValidators from "../clientValidators.js";
+import type * as clients from "../clients.js";
+import type * as demo from "../demo.js";
 import type * as http from "../http.js";
 import type * as provision from "../provision.js";
 
@@ -24,6 +27,9 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminAccounts: typeof adminAccounts;
   auth: typeof auth;
+  clientValidators: typeof clientValidators;
+  clients: typeof clients;
+  demo: typeof demo;
   http: typeof http;
   provision: typeof provision;
 }>;
