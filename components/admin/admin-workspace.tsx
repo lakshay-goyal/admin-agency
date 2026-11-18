@@ -44,6 +44,7 @@ import { DeliveryPanel } from "@/components/admin/delivery-panel";
 import { AgreementPanel } from "@/components/admin/agreement-panel";
 import { FilesPanel } from "@/components/admin/files-panel";
 import { ActivityPanel } from "@/components/admin/activity-panel";
+import { CopyOnboardingButton } from "@/components/admin/copy-onboarding-button";
 
 type Admin = { name: string; email: string; username?: string | null };
 
@@ -250,6 +251,7 @@ function ClientWorkspace({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <CopyOnboardingButton client={client} />
             {openChecks.length ? (
               <Badge variant="destructive">
                 <AlertTriangleIcon data-icon="inline-start" />

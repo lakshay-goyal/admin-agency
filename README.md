@@ -24,6 +24,10 @@ The dashboard reads and writes the client workspace tables that the public app a
 
 Client account details (name, email, verification) come from Better Auth and are read-only in this dashboard. Project record edits, stage progress, agreement changes, answer corrections, file reviews, and activity updates are persisted immediately and appear in the client workspace through Convex subscriptions.
 
+Select a client and click **Copy Onboarding** in their header to copy their complete onboarding as Markdown. The export includes their assigned question wording, guidance, choices, answers, structured fields, follow-up states, notes, and priorities. It includes unanswered questions in the current route, saved responses outside that route, and retained answers to removed questions with their original wording when available. Brief search and filters do not limit the export. If the browser blocks clipboard access, a dialog provides the full Markdown for manual copying.
+
+Run `bun test scripts/onboarding-markdown.test.ts` to check export completeness and formatting.
+
 ### Connect the client data
 
 The admin app must use the **same Convex deployment** as the client app. `convex/schema.ts` mirrors the client app's tables so this dashboard can query them. If you connect the admin app to the existing `webAgency` project, keep the two schema files aligned whenever the client data model changes. In particular, the client app's schema must also declare the `adminAccounts` table (or both apps must deploy from one shared `convex/` directory); otherwise a client-app deploy can remove the admin role table.
