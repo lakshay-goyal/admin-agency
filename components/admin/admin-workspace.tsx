@@ -150,7 +150,7 @@ export function AdminWorkspace({ admin }: { admin: Admin }) {
           >
             <MenuIcon />
           </Button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
               {detail?.summary.businessName || "Agency Desk"}
             </p>

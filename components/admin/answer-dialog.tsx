@@ -125,6 +125,7 @@ export function AnswerDialog({
             hint="A follow-up state keeps the question visible as an open item."
           >
             <NativeSelect
+              className="w-full"
               value={state}
               onChange={(event) => setState(event.target.value as AnswerState)}
             >
@@ -155,6 +156,7 @@ export function AnswerDialog({
           {question.priority && state === "answered" && Array.isArray(value) ? (
             <Field label="First priority">
               <NativeSelect
+                className="w-full"
                 value={priority}
                 onChange={(event) => setPriority(event.target.value)}
               >

@@ -80,7 +80,7 @@ export function DocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Review file</DialogTitle>
           <DialogDescription>{document.fileName}</DialogDescription>
@@ -88,6 +88,7 @@ export function DocumentDialog({
         <div className="flex flex-col gap-4">
           <Field label="Review status">
             <NativeSelect
+              className="w-full"
               value={status}
               onChange={(event) =>
                 setStatus(event.target.value as Document["status"])
@@ -102,6 +103,7 @@ export function DocumentDialog({
           </Field>
           <Field label="Category">
             <NativeSelect
+              className="w-full"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
             >

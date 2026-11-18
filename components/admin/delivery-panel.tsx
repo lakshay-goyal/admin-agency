@@ -107,7 +107,7 @@ export function DeliveryPanel({
                 {client.project?.nextStepDetail || "—"}
               </span>
             </div>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <dt className="text-xs text-muted-foreground">Start</dt>
                 <dd>{client.project?.startDate || "Not set"}</dd>

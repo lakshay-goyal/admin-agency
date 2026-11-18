@@ -64,7 +64,7 @@ export function QuestionnaireClientRollout({ version, disabled, onApplied }: { v
     {notice && <p role="status" className="text-sm text-muted-foreground">{notice}</p>}
     {!open && error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent className="max-h-[90svh] overflow-y-auto" showCloseButton={!busy}>
         <DialogHeader><DialogTitle>Update selected client questionnaires</DialogTitle><DialogDescription>These clients will receive the published global format, replacing any private customization. Saved answers with the same question IDs stay prefilled. Previous responses are archived; clients review new questions and confirm their brief again. Unselected clients keep their current version.</DialogDescription></DialogHeader>
         <Popover><PopoverTrigger render={<Button type="button" variant="outline" disabled={busy} className="justify-between" />}>{selected.length ? `${selected.length} clients selected` : "Select clients"}<ChevronDownIcon aria-hidden="true" /></PopoverTrigger>
           <PopoverContent className="w-[min(26rem,calc(100vw-3rem))]" align="start">

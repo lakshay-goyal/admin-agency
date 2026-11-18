@@ -55,12 +55,12 @@ export function CopyOnboardingButton({ client }: { client: ClientDetail }) {
         {copying ? "Copying…" : "Copy Onboarding"}
       </Button>
       <Dialog open={manualCopy !== null} onOpenChange={open => { if (!open) setManualCopy(null); }}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Copy onboarding Markdown</DialogTitle>
             <DialogDescription>Your browser blocked clipboard access. Select the content below and press Ctrl+C or ⌘C to copy the complete export.</DialogDescription>
           </DialogHeader>
-          <Textarea ref={textRef} aria-label="Complete onboarding Markdown" readOnly value={manualCopy ?? ""} className="h-80 resize-none font-mono text-xs" onFocus={event => event.currentTarget.select()} />
+          <Textarea ref={textRef} aria-label="Complete onboarding Markdown" readOnly value={manualCopy ?? ""} className="h-64 resize-none font-mono text-xs sm:h-80" onFocus={event => event.currentTarget.select()} />
           <Button variant="outline" onClick={() => { textRef.current?.focus(); textRef.current?.select(); }}>Select all Markdown</Button>
         </DialogContent>
       </Dialog>

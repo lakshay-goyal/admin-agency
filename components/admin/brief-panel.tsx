@@ -426,7 +426,7 @@ function WorkflowRouteCard({
             <NativeSelect
               value={adding}
               onChange={(event) => setAdding(event.target.value)}
-              className="min-w-56 flex-1"
+              className="w-full sm:min-w-56 sm:flex-1"
             >
               <NativeSelectOption value="">Add a workflow…</NativeSelectOption>
               {modules.map((page) => (

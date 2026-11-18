@@ -93,7 +93,7 @@ export function OverviewPanel({
                 : "Every tracked data point is complete for this client."}
             </CardDescription>
             <CardAction>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <Badge variant={openChecks.length ? "destructive" : "secondary"}>
                   {client.completeness.complete}/{client.completeness.total} complete
                 </Badge>
@@ -365,7 +365,7 @@ export function OverviewPanel({
             </CardAction>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-2 gap-4">
+            <dl className="grid gap-4 sm:grid-cols-2">
               <MetaItem label="Plan" value={client.engagement?.plan || "—"} />
               <MetaItem
                 label="Setup"
@@ -386,7 +386,7 @@ export function OverviewPanel({
                 label="Scope items"
                 value={client.engagement?.scope.length ?? 0}
               />
-              <div className="col-span-2 flex flex-wrap gap-2">
+              <div className="sm:col-span-2 flex flex-wrap gap-2">
                 <Badge
                   variant={
                     client.engagement?.signedAgreementRef
