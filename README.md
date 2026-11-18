@@ -6,7 +6,7 @@ Next.js App Router, Better Auth, and Convex. The login page uses the project's s
 - `/login` accepts an email or username and password, plus Google sign-in once configured.
 - `/dashboard` requires a live session, an approved admin email, and a stored `admin` role. Authenticated administrators skip the login page.
 - The dashboard is a client operations workspace: a searchable client sidebar, overview and data-completeness checks, the full onboarding brief, delivery stages and progress, agreement and billing, uploaded files, and the client-visible activity timeline.
-- Public password sign-up is disabled. Admin accounts and their roles are created through an internal Convex mutation. Google login can link to a provisioned administrator account.
+- Client password sign-up is available on the shared backend. It does not grant an administrator role. Admin accounts and their roles are created through an internal Convex mutation. Google login can link to a provisioned administrator account.
 - Removing an address from `ADMIN_EMAILS` revokes dashboard access, including for existing sessions.
 
 ## Admin dashboard
@@ -49,7 +49,7 @@ The seed contains four example clients at different stages. Never enable `ALLOW_
 
 ## Connect your Convex database
 
-The current `.env.local` points to an **anonymous local development database**. It is not your cloud database. This local data directory and environment file are ignored by Git. Two requested administrators have been provisioned there; passwords are managed and hashed by Better Auth.
+Both apps' current private `.env.local` files point to the same `webAgency` cloud development deployment. The questionnaire bridge points there too. Local fixture databases remain separate and are never used for cloud client records. Environment files are ignored by Git; passwords are managed and hashed by Better Auth.
 
 To connect the existing `webAgency` cloud project:
 
@@ -147,3 +147,13 @@ The app keeps its Next.js Cache Components configuration. Request-time auth is i
 Better Auth is pinned to the patched `1.6.33` release line supported by the current Convex adapter. A narrow cast at the provider prop addresses [Convex's known client type incompatibility](https://github.com/get-convex/better-auth/issues/420); it does not change the runtime client or weaken the app's own types.
 
 Official setup guides: [Convex + Better Auth for Next.js](https://labs.convex.dev/better-auth/framework-guides/next), [Better Auth usage](https://better-auth.com/docs/basic-usage), and [Google OAuth](https://better-auth.com/docs/authentication/google).
+
+## Manage live onboarding questionnaires
+
+Open `/dashboard/questionnaires`, also linked from the client sidebar. Choose the global **New clients** scope or a specific client from the portal backend. Edit questions, choices, hints, fields, conditions, routing and phases; save a draft, then publish with a reason. Global releases leave existing clients unchanged. A client-specific release preserves responses by stable question ID and archives the previous brief before requesting review from that client. After a global publication, **Apply published version to existing clients** opens a searchable checkbox dropdown with individual and Select all selection. Only selected clients move to that format; saved values stay prefilled, and only the final accuracy confirmation must be supplied again. Removed questions retain their answers for restoration if that question returns.
+
+This feature uses an authenticated server-to-server connection to the same client portal database as the admin workspace. The route rejects a bridge URL pointing at a different deployment. Configure `CLIENT_PORTAL_CONVEX_SITE_URL` and `QUESTIONNAIRE_ADMIN_TOKEN` on the admin Next.js server, and the matching token on the client portal Convex backend. These are server settings, never public frontend variables. The shared cloud development connection is configured and verified; production settings must be configured separately.
+
+See the client app's `docs/onboarding-versioning.md` for migration, safeguards, data ownership and verification. `bun test scripts/questionnaire-proxy.test.mjs` checks the proxy authorization boundary with a mocked admin session.
+
+Run `bun run check:shared-backend --environment` with both sibling checkouts present before pushing backend changes. The canonical backend is `../next-app/convex`; both mirrors must remain identical. See `../next-app/docs/onboarding-integration-audit.md` for findings and verification.

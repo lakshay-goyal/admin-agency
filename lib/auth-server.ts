@@ -10,5 +10,6 @@ export const { handler, getToken, fetchAuthQuery } = convexBetterAuthNextJs({
 
 // Validate the live session and admin access on the backend for every request.
 export const getCurrentAdmin = cache(async () => {
-  return fetchAuthQuery(api.auth.getCurrentUser, {});
+  const user = await fetchAuthQuery(api.auth.getCurrentUser, {});
+  return user?.role === "admin" ? user : null;
 });

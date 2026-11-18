@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { assignedQuestionnaireValidator } from "./questionnaireValidators";
 
 /**
  * These validators mirror the client app's Convex schema. The admin app shares
@@ -248,6 +249,7 @@ export const clientListRowValidator = v.object({
 });
 
 export const clientDetailValidator = v.object({
+  questionnaire: assignedQuestionnaireValidator,
   authUserId: v.string(),
   user: v.union(
     v.null(),

@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { authComponent } from "./auth";
 import { isAdminEmail } from "./admin";
+import { resolveQuestionnaire, questionnaireView, requireAssignedVersion } from "./questionnaireStore";
 import type { Doc } from "./_generated/dataModel";
 import {
   answerValidator,
@@ -12,18 +13,11 @@ import {
   projectStatusValidator,
 } from "./clientValidators";
 import { getClientSummary } from "../lib/onboarding/summary";
-import {
-  getOpenItems,
-  getPageById,
-  getPages,
-  isAnswerEmpty,
-  isQuestionVisible,
-} from "../lib/onboarding/questionnaire";
+import { createQuestionnaire, isAnswerEmpty, isQuestionVisible, validateAnswerShape } from "../lib/onboarding/engine";
 import { getGuidedProgress, getGuidedSteps } from "../lib/onboarding/guided-flow";
 import type { Answers } from "../lib/onboarding/types";
 import { DOCUMENT_CATEGORIES } from "../lib/onboarding/documents";
 import { DEFAULT_DELIVERY_STAGES } from "../lib/onboarding/delivery";
-import { MODULE_PAGES } from "../lib/onboarding/module-pages";
 
 type AdminCtx = QueryCtx | MutationCtx;
 
@@ -384,22 +378,25 @@ async function clientDetail(ctx: QueryCtx | MutationCtx, authUserId: string) {
         .take(100),
     ]);
 
+  const questionnaire = await resolveQuestionnaire(ctx, "client", authUserId, draft?.version);
+  const engine = createQuestionnaire(questionnaire.definition);
   const answers = draft?.answers ?? {};
   const summary = draft
     ? getClientSummary({
+        definition: questionnaire.definition,
         answers: draft.answers,
         extraModules: draft.extraModules,
         status: draft.status,
         submittedAt: draft.submittedAt,
       })
     : null;
-  const pages = getPages(answers, draft?.extraModules ?? []);
+  const pages = engine.getPages(answers, draft?.extraModules ?? []);
   const progress = getGuidedProgress(
     getGuidedSteps(pages, answers),
     answers,
     true,
   );
-  const openItems = getOpenItems(answers, draft?.extraModules ?? []);
+  const openItems = engine.getOpenItems(answers, draft?.extraModules ?? []);
   const pending = pendingPrerequisites(user, engagement, draft);
   const checks = completenessChecks({
     user,
@@ -436,6 +433,7 @@ async function clientDetail(ctx: QueryCtx | MutationCtx, authUserId: string) {
 
   return {
     authUserId,
+    questionnaire: questionnaireView(questionnaire),
     user: user
       ? {
           name: user.name,
@@ -605,8 +603,10 @@ export const list = query({
         const clientDocuments = documents.filter(
           (item) => item.authUserId === authUserId,
         );
+        const questionnaire = draft ? await resolveQuestionnaire(ctx, "client", authUserId, draft.version) : null;
         const summary = draft
           ? getClientSummary({
+              definition: questionnaire!.definition,
               answers: draft.answers,
               extraModules: draft.extraModules,
               status: draft.status,
@@ -614,7 +614,7 @@ export const list = query({
             })
           : null;
         const openItems = draft
-          ? getOpenItems(draft.answers, draft.extraModules)
+          ? createQuestionnaire(questionnaire!.definition).getOpenItems(draft.answers, draft.extraModules)
           : [];
         const pending = pendingPrerequisites(user, engagement, draft);
         const checks = completenessChecks({
@@ -733,6 +733,7 @@ export const updateAnswer = mutation({
   args: {
     authUserId: v.string(),
     questionId: v.string(),
+    questionnaireVersion: v.string(),
     answer: answerValidator,
   },
   returns: v.null(),
@@ -743,10 +744,13 @@ export const updateAnswer = mutation({
       .withIndex("by_authUserId", (q) => q.eq("authUserId", args.authUserId))
       .unique();
     if (!draft) throw new ConvexError("This client has not started a brief yet.");
-    if (!getPageById(args.questionId.split(".")[0])) {
-      // The page id is the question prefix before the dot (P01/M01).
-      throw new ConvexError("Unknown onboarding question.");
-    }
+    const questionnaire = await resolveQuestionnaire(ctx, "client", args.authUserId, draft.version);
+    requireAssignedVersion(questionnaire.version, args.questionnaireVersion);
+    const question = questionnaire.definition.pages.flatMap(page => page.questions).find(question => question.id === args.questionId);
+    if (!question) throw new ConvexError("Unknown onboarding question.");
+    if (question.acknowledgement || ["P01.1", "P01.3", "P15.1"].includes(question.id)) throw new ConvexError("This contact or confirmation must be supplied directly by the client.");
+    const shapeError = validateAnswerShape(question, args.answer);
+    if (shapeError) throw new ConvexError(shapeError);
     const text =
       typeof args.answer.value === "string" ? args.answer.value : undefined;
     if (text && text.length > 6000) {
@@ -757,9 +761,6 @@ export const updateAnswer = mutation({
       answers: { ...draft.answers, [args.questionId]: args.answer },
       updatedAt: now,
     });
-    const question = getPageById(args.questionId.split(".")[0])?.questions.find(
-      (item) => item.id === args.questionId,
-    );
     await logActivity(ctx, {
       authUserId: args.authUserId,
       type: "brief",
@@ -773,7 +774,7 @@ export const updateAnswer = mutation({
 
 /** Add or remove explicit workflow modules without rewriting answers. */
 export const updateExtraModules = mutation({
-  args: { authUserId: v.string(), extraModules: v.array(v.string()) },
+  args: { authUserId: v.string(), extraModules: v.array(v.string()), questionnaireVersion: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -782,15 +783,12 @@ export const updateExtraModules = mutation({
       .withIndex("by_authUserId", (q) => q.eq("authUserId", args.authUserId))
       .unique();
     if (!draft) throw new ConvexError("This client has not started a brief yet.");
-    const validIds = new Set(MODULE_PAGES.map((page) => page.id));
+    const questionnaire = await resolveQuestionnaire(ctx, "client", args.authUserId, draft.version);
+    requireAssignedVersion(questionnaire.version, args.questionnaireVersion);
+    const validIds = new Set(questionnaire.definition.pages.filter(page => page.kind === "module").map(page => page.id));
+    if (args.extraModules.some(id => !validIds.has(id))) throw new ConvexError("Choose a workflow from this client's assigned questionnaire.");
     await ctx.db.patch(draft._id, {
-      extraModules: [
-        ...new Set(
-          args.extraModules
-            .map((id) => id.toUpperCase())
-            .filter((id) => validIds.has(id)),
-        ),
-      ],
+      extraModules: [...new Set(args.extraModules)],
       updatedAt: Date.now(),
     });
     return null;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   AlertTriangleIcon,
   ArrowUpRightIcon,
@@ -70,6 +71,7 @@ export function ClientSidebar({
         </Badge>
       </div>
 
+      <Link href="/dashboard/questionnaires" className="mx-3 mt-3 rounded-lg border px-3 py-3 text-sm font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">Manage onboarding questionnaires</Link>
       <div className="flex flex-col gap-2 px-3 pt-3">
         <div className="relative">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

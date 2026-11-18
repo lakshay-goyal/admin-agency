@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { getOptionLabel } from "@/lib/onboarding/engine";
 import type { Answer, AnswerState, Question } from "@/lib/onboarding/types";
 import {
   DISPLAY_STATE_LABELS,
@@ -42,12 +43,14 @@ function isRecord(value: Answer["value"]): value is Record<string, string> {
 
 export function AnswerDialog({
   authUserId,
+  questionnaireVersion,
   question,
   answer,
   open,
   onOpenChange,
 }: {
   authUserId: string;
+  questionnaireVersion: string;
   question: Question | null;
   answer: Answer | undefined;
   open: boolean;
@@ -75,6 +78,7 @@ export function AnswerDialog({
     try {
       await updateAnswer({
         authUserId,
+        questionnaireVersion,
         questionId: question!.id,
         answer: {
           state,
@@ -248,7 +252,7 @@ function AnswerValueEditor({
                   )
                 }
               >
-                {option}
+                {getOptionLabel(question, option)}
               </Button>
             );
           })}
@@ -329,7 +333,7 @@ function AnswerValueEditor({
                       onChange(next);
                     }}
                   />
-                  {option}
+                  {getOptionLabel(question, option)}
                 </label>
                 {selected ? (
                   <NativeSelect

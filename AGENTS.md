@@ -28,3 +28,7 @@ Retain qualifying friction even if it is later fixed or worked around; record th
 Before the final response, run one reporting pass. If candidates remain, from this file's directory run `npx --no-install next internal agent-feedback-instructions` once without piping or truncating its output. Follow its output or error guidance. If a network sandbox blocks it, retry with network access; if it still returns no output, continue normally.
 
 <!-- END:nextjs-agent-feedback -->
+
+## Onboarding questionnaire management
+
+Read `../next-app/docs/onboarding-versioning.md` before changing `/dashboard/questionnaires` or its API. Live definitions and client briefs belong to the shared client/admin Convex backend. The admin server bridge checks the existing admin session and keeps the shared credential server-side. Global publishing affects new entrants only; existing clients keep immutable assignments unless explicitly targeted through a client release or checkbox rollout. Preserve answers by stable ID, and retain removed responses so reintroduced questions can be prefilled. Run `bun run check:shared-backend --environment` before deploying either backend mirror. Do not replace this flow with edits to the older static question library or with a global client-version invalidation.

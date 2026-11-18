@@ -1,35 +1,14 @@
-import {
-  ANSWER_STATE_LABELS,
-  MODULE_PAGES,
-  SHARED_PAGES,
-  answerValues,
-  getAllowedAnswerStates,
-  getOpenItems,
-  getPageById,
-  getPages,
-  isAnswerEmpty,
-  isQuestionVisible,
-} from "@/lib/onboarding/questionnaire";
-import { getOnboardingPhases } from "@/lib/onboarding/phases";
+import { ANSWER_STATE_LABELS, answerValues, createQuestionnaire, getAllowedAnswerStates, getOptionLabel, isAnswerEmpty, isQuestionVisible } from "@/lib/onboarding/engine";
+import { getOnboardingPhases } from "@/lib/onboarding/phase-engine";
 import type {
   Answer,
   AnswerState,
   Answers,
-  Page,
+  QuestionnaireDefinition,
   Question,
 } from "@/lib/onboarding/types";
 
 export { ANSWER_STATE_LABELS };
-
-export const ALL_PAGES: Page[] = [...SHARED_PAGES, ...MODULE_PAGES];
-
-export const QUESTION_INDEX = new Map<string, { question: Question; page: Page }>(
-  ALL_PAGES.flatMap((page) =>
-    page.questions.map(
-      (question) => [question.id, { question, page }] as const,
-    ),
-  ),
-);
 
 export const DISPLAY_STATE_LABELS: Record<AnswerState, string> = {
   answered: "Answered",
@@ -41,10 +20,6 @@ export const DISPLAY_STATE_LABELS: Record<AnswerState, string> = {
 
 export function answerStateLabel(state: AnswerState) {
   return DISPLAY_STATE_LABELS[state];
-}
-
-export function questionById(id: string) {
-  return QUESTION_INDEX.get(id);
 }
 
 const ASSET_STATUS_LABELS: Record<string, string> = {
@@ -67,7 +42,7 @@ export function formatQuestionAnswer(
   const value = answer.value;
   let result: string;
   if (Array.isArray(value)) {
-    result = value.filter(Boolean).join(", ");
+    result = value.filter(Boolean).map(item => getOptionLabel(question, item)).join(", ");
   } else if (typeof value === "boolean") {
     result = value ? "Confirmed" : "Not confirmed";
   } else if (typeof value === "number") {
@@ -78,7 +53,7 @@ export function formatQuestionAnswer(
       result = entries
         .map(
           ([label, status]) =>
-            `${label} — ${ASSET_STATUS_LABELS[status] ?? status}`,
+            `${getOptionLabel(question, label)} — ${ASSET_STATUS_LABELS[status] ?? status}`,
         )
         .join(" · ");
     } else if (question.fields?.length) {
@@ -92,7 +67,7 @@ export function formatQuestionAnswer(
       result = entries.map(([key, item]) => `${key}: ${item}`).join(" · ");
     }
   } else {
-    result = value;
+    result = getOptionLabel(question, value);
   }
   return [
     result || "No value recorded",
@@ -103,8 +78,8 @@ export function formatQuestionAnswer(
     .join(" — ");
 }
 
-export function getClientPhases(answers: Answers, extras: string[]) {
-  return getOnboardingPhases(answers, extras, true)
+export function getClientPhases(definition: QuestionnaireDefinition, answers: Answers, extras: string[]) {
+  return getOnboardingPhases(definition, answers, extras, true)
     .map((phase) => ({
       ...phase,
       questions: phase.steps
@@ -123,9 +98,9 @@ export function getClientPhases(answers: Answers, extras: string[]) {
 }
 
 /** Saved answers whose workflow is no longer in the client's active route. */
-export function getInactiveAnsweredPages(answers: Answers, extras: string[]) {
-  const active = new Set(getPages(answers, extras).map((page) => page.id));
-  return ALL_PAGES.filter((page) => !active.has(page.id))
+export function getInactiveAnsweredPages(definition: QuestionnaireDefinition, answers: Answers, extras: string[]) {
+  const active = new Set(createQuestionnaire(definition).getPages(answers, extras).map((page) => page.id));
+  return definition.pages.filter((page) => !active.has(page.id))
     .map((page) => ({
       ...page,
       questions: page.questions.filter((question) => answers[question.id]),
@@ -133,9 +108,9 @@ export function getInactiveAnsweredPages(answers: Answers, extras: string[]) {
     .filter((page) => page.questions.length > 0);
 }
 
-export function getOpenItemIds(answers: Answers, extras: string[]) {
+export function getOpenItemIds(definition: QuestionnaireDefinition, answers: Answers, extras: string[]) {
   return new Set(
-    getOpenItems(answers, extras).map((item) => item.questionId),
+    createQuestionnaire(definition).getOpenItems(answers, extras).map((item) => item.questionId),
   );
 }
 
@@ -143,12 +118,12 @@ export function getSelectedWork(answers: Answers) {
   return answerValues(answers["P08.1"]);
 }
 
-export function getModulePages() {
-  return MODULE_PAGES;
+export function getModulePages(definition: QuestionnaireDefinition) {
+  return definition.pages.filter(page => page.kind === "module");
 }
 
-export function moduleTitle(id: string) {
-  return getPageById(id)?.title ?? id;
+export function moduleTitle(definition: QuestionnaireDefinition, id: string) {
+  return definition.pages.find(page => page.id === id)?.title ?? id;
 }
 
 export function defaultValueForQuestion(question: Question): Answer["value"] {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, type ComponentProps, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ export function LoginForm({
   googleEnabled: boolean;
   initialError?: string;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState<"password" | "google" | null>(null);
   const [error, setError] = useState(initialError ?? "");
   const errorRef = useRef<HTMLDivElement>(null);
@@ -57,8 +55,8 @@ export function LoginForm({
         );
         return;
       }
-      router.replace("/dashboard");
-      router.refresh();
+      // Recreate the auth provider with the newly issued session, including account switches.
+      window.location.replace("/dashboard");
     } catch {
       showError("Unable to connect. Please try again.");
     } finally {

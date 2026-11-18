@@ -24,9 +24,9 @@ import {
   moduleTitle,
 } from "@/lib/admin/onboarding";
 import {
-  getSelectedModules,
+  createQuestionnaire,
   isAnswerEmpty,
-} from "@/lib/onboarding/questionnaire";
+} from "@/lib/onboarding/engine";
 import { relativeTime } from "@/lib/admin/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,9 +71,9 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<Question | null>(null);
 
-  const openItemIds = getOpenItemIds(answers, extras);
-  const phases = getClientPhases(answers, extras);
-  const inactivePages = getInactiveAnsweredPages(answers, extras);
+  const openItemIds = getOpenItemIds(client.questionnaire.definition, answers, extras);
+  const phases = getClientPhases(client.questionnaire.definition, answers, extras);
+  const inactivePages = getInactiveAnsweredPages(client.questionnaire.definition, answers, extras);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -316,9 +316,10 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
 
       {editing ? (
         <AnswerDialog
-          key={editing.id}
+          key={`${client.authUserId}:${client.questionnaire.version}:${editing.id}`}
           authUserId={client.authUserId}
-          question={editing}
+          questionnaireVersion={client.questionnaire.version}
+          question={client.questionnaire.definition.pages.flatMap(page => page.questions).find(question => question.id === editing.id) ?? null}
           answer={answers[editing.id]}
           open
           onOpenChange={(open) => {
@@ -340,10 +341,10 @@ function WorkflowRouteCard({
   const updateExtraModules = useMutation(api.clients.updateExtraModules);
   const toast = useToastManager();
   const extras = client.draft?.extraModules ?? [];
-  const derived = getSelectedModules(answers, []);
+  const derived = createQuestionnaire(client.questionnaire.definition).getSelectedModules(answers, []);
   const [adding, setAdding] = useState("");
   const [saving, setSaving] = useState(false);
-  const modules = getModulePages().filter(
+  const modules = getModulePages(client.questionnaire.definition).filter(
     (page) => !derived.includes(page.id) && !extras.includes(page.id),
   );
 
@@ -353,6 +354,7 @@ function WorkflowRouteCard({
       await updateExtraModules({
         authUserId: client.authUserId,
         extraModules: next,
+        questionnaireVersion: client.questionnaire.version,
       });
       toast.add({
         title: "Workflow route updated",
@@ -391,7 +393,7 @@ function WorkflowRouteCard({
         <div className="flex flex-wrap gap-1.5">
           {client.summary.selectedModules.map((id) => (
             <Badge key={id} variant="secondary">
-              {id} · {moduleTitle(id)}
+              {id} · {moduleTitle(client.questionnaire.definition, id)}
             </Badge>
           ))}
           {!client.summary.selectedModules.length ? (
@@ -405,7 +407,7 @@ function WorkflowRouteCard({
             <span className="text-xs text-muted-foreground">Manually added:</span>
             {extras.map((id) => (
               <Badge key={id} variant="outline" className="gap-1">
-                {id} · {moduleTitle(id)}
+                {id} · {moduleTitle(client.questionnaire.definition, id)}
                 <button
                   type="button"
                   aria-label={`Remove ${id}`}
