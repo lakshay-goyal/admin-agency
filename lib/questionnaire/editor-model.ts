@@ -11,6 +11,11 @@ export function removeQuestion(definition: QuestionnaireDefinition, id: string):
 export function addQuestion(definition: QuestionnaireDefinition, pageId: string, afterId: string) {
   const page = definition.pages.find(page => page.id === pageId);
   if (!page) throw new Error("Choose a topic first.");
+  if (definition.layout === "compact") {
+    const question: Question = { id: `${page.id}.q-${idPart()}`, label: "What else would you like us to know?", type: "textarea", required: false, optionalDetail: true, help: "Optional: share one example or useful link. You can leave this blank." };
+    const index = page.questions.findIndex(question => question.id === afterId) + 1;
+    return { definition: { ...definition, pages: definition.pages.map(current => current.id === pageId ? { ...current, questions: [...current.questions.slice(0, index), question, ...current.questions.slice(index)] } : current) }, questionId: question.id };
+  }
   const phase = definition.phases.find(phase => phase.questionIds.includes(afterId));
   if (page.kind !== "module" && (!phase || phase.questionIds.length >= 5 || afterId === "P16.3")) throw new Error("This phase is full or ends with confirmation. Add a new business phase instead.");
   const question: Question = { id: `${page.id}.q-${idPart()}`, label: "What else should we understand?", type: "textarea", required: false, help: "A short example is enough.", why: "This helps us plan the work for your project." };
@@ -23,6 +28,11 @@ export function addTopic(definition: QuestionnaireDefinition, kind: "shared" | "
   const question: Question = { id: `${id}.1`, label: "What should we know about this part of your business?", type: "textarea", required: false, help: "Start with one example.", why: "This gives us context for planning your project." };
   const title = kind === "module" ? "New workflow" : "Additional business context";
   const page = { id, title, kind, description: "Share what you know; you can ask for help.", questions: [question] };
+  if (definition.layout === "compact") {
+    question.optionalDetail = true;
+    question.help = "Optional: share one example or useful link. You can leave this blank.";
+    return { definition: { ...definition, pages: [...definition.pages, page] }, questionId: question.id };
+  }
   const firstModule = definition.pages.findIndex(page => page.kind === "module");
   const firstClosing = definition.phases.findIndex(phase => phase.placement === "after-modules");
   const closingQuestion = definition.phases[firstClosing]?.questionIds[0];

@@ -82,6 +82,7 @@ export function getClientPhases(definition: QuestionnaireDefinition, answers: An
   return getOnboardingPhases(definition, answers, extras, true)
     .map((phase) => ({
       ...phase,
+      optionalTopics: phase.id === "final" ? createQuestionnaire(definition).getPages(answers, extras).map(page => ({ ...page, questions: page.questions.filter(question => question.optionalDetail) })).filter(page => page.questions.length) : [],
       questions: phase.steps
         .filter((step) => step.question)
         .filter((step) => isQuestionVisible(step.question!, answers))

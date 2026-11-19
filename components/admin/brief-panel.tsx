@@ -79,6 +79,7 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
 
   function matches(question: Question, answer: Answer | undefined) {
     const missing = !answer || isAnswerEmpty(answer);
+    if (question.optionalDetail && missing && ["missing", "attention"].includes(filter)) return false;
     const followUp =
       openItemIds.has(question.id) ||
       (answer && answer.state !== "answered");
@@ -103,11 +104,12 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
   const filteredPhases = phases
     .map((phase) => ({
       ...phase,
+      optionalTopics: phase.optionalTopics.map(topic => ({ ...topic, questions: topic.questions.filter(question => matches(question, answers[question.id])) })).filter(topic => topic.questions.length),
       questions: phase.questions.filter(({ question, answer }) =>
         matches(question, answer),
       ),
     }))
-    .filter((phase) => phase.questions.length);
+    .filter((phase) => phase.questions.length || phase.optionalTopics.length);
 
   const filteredInactive = inactivePages
     .map((page) => ({
@@ -236,6 +238,7 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
                 <AccordionTrigger>
                   <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{phase.title}</span>
+                    {phase.id === "final" && client.questionnaire.definition.layout === "compact" ? <Badge variant="outline">Optional topics & review</Badge> : null}
                     {phase.service ? (
                       <Badge variant="outline">Workflow</Badge>
                     ) : null}
@@ -263,6 +266,7 @@ export function BriefPanel({ client }: { client: ClientDetail }) {
                       />
                     ))}
                   </div>
+                  {phase.optionalTopics.length > 0 && <section className="mt-5 rounded-xl border bg-muted/20 p-4"><h3 className="font-medium">Optional extra details</h3><p className="mt-1 text-sm text-muted-foreground">Blank extras do not count as missing. Open a topic to review or add context.</p>{phase.optionalTopics.map(topic => <details key={topic.id} className="mt-3 border-t pt-3"><summary className="min-h-10 cursor-pointer text-sm font-medium">{topic.title} · optional</summary><div className="flex flex-col gap-2 py-3">{topic.questions.filter(question => matches(question, answers[question.id])).map(question => <QuestionRow key={question.id} question={question} answer={answers[question.id]} followUp={openItemIds.has(question.id)} onEdit={() => setEditing(question)} />)}</div></details>)}</section>}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -494,7 +498,7 @@ function QuestionRow({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {missing ? (
+        {missing && question.optionalDetail ? <Badge variant="outline">Optional · not provided</Badge> : missing ? (
           <Badge variant="destructive">
             <CircleAlertIcon data-icon="inline-start" />
             Missing
